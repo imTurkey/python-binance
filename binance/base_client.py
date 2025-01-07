@@ -20,7 +20,8 @@ from .helpers import get_loop
 
 
 class BaseClient:
-    API_URL = "https://api{}.binance.{}/api"
+    # API_URL = "https://api{}.binance.{}/api"
+    API_URL = "https://data-api.binance.vision/api"
     API_TESTNET_URL = "https://testnet.binance.vision/api"
     MARGIN_API_URL = "https://api{}.binance.{}/sapi"
     WEBSITE_URL = "https://www.binance.{}"

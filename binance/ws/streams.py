@@ -24,7 +24,8 @@ class BinanceSocketType(str, Enum):
 
 
 class BinanceSocketManager:
-    STREAM_URL = "wss://stream.binance.{}:9443/"
+    # STREAM_URL = "wss://stream.binance.{}:9443/"
+    STREAM_URL = "wss://data-stream.binance.vision/"
     STREAM_TESTNET_URL = "wss://testnet.binance.vision/"
     FSTREAM_URL = "wss://fstream.binance.{}/"
     FSTREAM_TESTNET_URL = "wss://stream.binancefuture.com/"
@@ -212,12 +213,12 @@ class BinanceSocketManager:
         socket_name = symbol.lower() + "@depth"
         if depth and depth != "1":
             socket_name = f"{socket_name}{depth}"
-        if interval:
-            if interval in [0, 100]:
+        if interval is not None:
+            if interval in [100, 1000]:
                 socket_name = f"{socket_name}@{interval}ms"
             else:
                 raise ValueError(
-                    "Websocket interval value not allowed. Allowed values are [0, 100]"
+                    "Websocket interval value not allowed. Allowed values are [100, 1000]"
                 )
         return self._get_socket(socket_name)
 
@@ -660,7 +661,11 @@ class BinanceSocketManager:
         )
 
     def futures_depth_socket(
-        self, symbol: str, depth: str = "10", futures_type=FuturesType.USD_M
+        self, 
+        symbol: str, 
+        depth: Optional[str] = None, 
+        interval: Optional[int] = None,
+        futures_type=FuturesType.USD_M
     ):
         """Subscribe to a futures depth data stream
 
@@ -672,9 +677,18 @@ class BinanceSocketManager:
         :type depth: str
         :param futures_type: use USD-M or COIN-M futures default USD-M
         """
-        return self._get_futures_socket(
-            symbol.lower() + "@depth" + str(depth), futures_type=futures_type
-        )
+
+        socket_name = symbol.lower() + "@depth"
+        if depth and depth != "1":
+            socket_name = f"{socket_name}{depth}"
+        if interval is not None:
+            if interval in [100, 250, 500]:
+                socket_name = f"{socket_name}@{interval}ms"
+            else:
+                raise ValueError(
+                    "Websocket interval value not allowed. Allowed values are [100, 1000]"
+                )
+        return self._get_futures_socket(socket_name, futures_type=futures_type)
 
     def symbol_mark_price_socket(
         self,
