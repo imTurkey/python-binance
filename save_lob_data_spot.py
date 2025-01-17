@@ -20,16 +20,13 @@ def main():
             print("start engine successfully.")
 
         symbol = depth_cache.symbol
-        market = depth_cache.market
-        market_symbol = f"{market}_{symbol.lower()}"
-
-        saved_depth = configs[market_symbol]["saved_depth"]
+        saved_depth = configs[symbol]["saved_depth"]
         price_decimal_digits = config["price_decimal_digits"]
         volume_decimal_digits = config["volume_decimal_digits"]
         
         # dt_time = datetime.utcfromtimestamp(depth_cache.update_time/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
         delay = str(time.time() * 1000 - depth_cache.update_time)[:10]
-        print("\rdelay(ms): ", delay, "len(dataframe):", len(dataframes[market_symbol]), end=' ')
+        print("\rdelay(ms): ", delay, "len(dataframe):", len(dataframes[symbol]), end=' ')
 
         bids = depth_cache.get_bids()[:saved_depth]
         asks = depth_cache.get_asks()[:saved_depth]
@@ -46,27 +43,17 @@ def main():
         asks_price, asks_qty = np.array(asks).T.tolist()
 
         with lock:
-            dataframes[market_symbol].loc[depth_cache.update_time] = bids_price[::-1] + asks_price + bids_qty[::-1] + asks_qty
+            dataframes[symbol].loc[depth_cache.update_time] = bids_price[::-1] + asks_price + bids_qty[::-1] + asks_qty
         
 
     
-    for market_symbol, config in configs.items():
-        market, symbol = market_symbol.split('_')
-        if market == "spot":
-            dcm_pool[market_symbol] = dcm.start_depth_cache(
-                handle_depth_cache, 
-                symbol=symbol.upper(), 
-                limit=config["rest_depth"], 
-                ws_interval=config["ws_interval"], 
-                )
-        elif market == "futures":
-            dcm_pool[market_symbol] = dcm.start_futures_depth_cache(
-                handle_depth_cache, 
-                symbol=symbol.upper(), 
-                limit=config["rest_depth"], 
-                ws_interval=config["ws_interval"], 
-                )
-
+    for symbol, config in configs.items():
+        dcm_pool[symbol] = dcm.start_depth_cache(
+            handle_depth_cache, 
+            symbol=symbol, 
+            limit=config["rest_depth"], 
+            ws_interval=config["ws_interval"], 
+            )
     
     dcm.join()
 
@@ -95,11 +82,7 @@ def check_and_save_data():
                     # start_time = re.sub(r'[^a-zA-Z0-9]', '_', start_time)
                     # end_time = re.sub(r'[^a-zA-Z0-9]', '_', end_time)
 
-                    date = datetime.utcfromtimestamp(start_time/1000).strftime('%Y%m%d')
-                    if not os.path.exists(f"data/{symbol}/{date}"):
-                        os.makedirs(f"data/{symbol}/{date}")
-
-                    file_name = f"data/{symbol}/{date}/{symbol}-{start_time_dt}-{end_time_dt}.csv"
+                    file_name = f"data/{symbol}SPOT-{symbol}-{start_time_dt}-{end_time_dt}.csv"
                     dataframe.to_csv(file_name)
                     to_renew.append(symbol)
                     print(f"Saved: {file_name}.")
@@ -116,62 +99,9 @@ if __name__ == "__main__":
     server_start_time = time.time()
 
     configs = {
-        # btc
-        "spot_btcusdt":{
+        "BTCUSDT":{
             "rest_depth": 2000,
             "ws_interval": 1000, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        "futures_btcusdt":{
-            "rest_depth": 1000,
-            "ws_interval": 500, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        # eth
-        "spot_ethusdt":{
-            "rest_depth": 2000,
-            "ws_interval": 1000, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        "futures_ethusdt":{
-            "rest_depth": 1000,
-            "ws_interval": 500, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        # bnb
-        "spot_bnbusdt":{
-            "rest_depth": 2000,
-            "ws_interval": 1000, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        "futures_bnbusdt":{
-            "rest_depth": 1000,
-            "ws_interval": 500, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        # small
-        "futures_kasusdt":{
-            "rest_depth": 1000,
-            "ws_interval": 500, # 100, 1000
-            "saved_depth": 100,
-            "price_decimal_digits": 2,
-            "volume_decimal_digits": 5
-        },
-        "futures_biousdt":{
-            "rest_depth": 1000,
-            "ws_interval": 500, # 100, 1000
             "saved_depth": 100,
             "price_decimal_digits": 2,
             "volume_decimal_digits": 5

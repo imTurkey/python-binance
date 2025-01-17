@@ -10,7 +10,7 @@ from .threaded_stream import ThreadedApiManager
 
 
 class DepthCache(object):
-    def __init__(self, symbol, conv_type: Callable = float):
+    def __init__(self, symbol, market, conv_type: Callable = float):
         """Initialise the DepthCache
 
         :param symbol: Symbol to create depth cache for
@@ -20,6 +20,7 @@ class DepthCache(object):
 
         """
         self.symbol = symbol
+        self.market = market
         self._bids = {}
         self._asks = {}
         self.update_time = None
@@ -148,6 +149,7 @@ class BaseDepthCacheManager:
         self,
         client,
         symbol,
+        market,
         loop=None,
         refresh_interval: Optional[int] = DEFAULT_REFRESH,
         bm=None,
@@ -179,6 +181,7 @@ class BaseDepthCacheManager:
         self._depth_cache = None
         self._loop = loop or get_loop()
         self._symbol = symbol
+        self._market = market
         self._limit = limit
         self._last_update_id = None
         self._bm = bm or BinanceSocketManager(self._client)
@@ -214,7 +217,7 @@ class BaseDepthCacheManager:
         """
 
         # initialise or clear depth cache
-        self._depth_cache = DepthCache(self._symbol, conv_type=self._conv_type)
+        self._depth_cache = DepthCache(self._symbol, self._market, conv_type=self._conv_type)
 
         # set a time to refresh the depth cache
         if self._refresh_interval:
@@ -313,7 +316,7 @@ class DepthCacheManager(BaseDepthCacheManager):
         self._depth_message_buffer = []
 
         res = await self._client.get_order_book(symbol=self._symbol, limit=self._limit)
-        print("REST message", res["lastUpdateId"])
+        # print("REST message", res["lastUpdateId"])
 
         # initialise or clear depth cache
         await super()._init_cache()
@@ -351,7 +354,7 @@ class DepthCacheManager(BaseDepthCacheManager):
         :return:
 
         """
-        print("ws depth message", msg["U"], msg["u"])
+        # print("ws depth message", msg["U"], msg["u"])
         if self._last_update_id is None:
             # Initial depth snapshot fetch not yet performed, buffer messages
             self._depth_message_buffer.append(msg)
@@ -458,6 +461,7 @@ class ThreadedDepthCacheManager(ThreadedApiManager):
         dcm_class,
         callback: Callable,
         symbol: str,
+        market: str,
         refresh_interval=None,
         bm=None,
         limit=10,
@@ -470,6 +474,7 @@ class ThreadedDepthCacheManager(ThreadedApiManager):
         dcm = dcm_class(
             client=self._client,
             symbol=symbol,
+            market=market,
             loop=self._loop,
             refresh_interval=refresh_interval,
             bm=bm,
@@ -498,6 +503,7 @@ class ThreadedDepthCacheManager(ThreadedApiManager):
             dcm_class=DepthCacheManager,
             callback=callback,
             symbol=symbol,
+            market="spot",
             refresh_interval=refresh_interval,
             bm=bm,
             limit=limit,
@@ -518,6 +524,7 @@ class ThreadedDepthCacheManager(ThreadedApiManager):
             dcm_class=FuturesDepthCacheManager,
             callback=callback,
             symbol=symbol,
+            market="futures",
             refresh_interval=refresh_interval,
             bm=bm,
             limit=limit,
