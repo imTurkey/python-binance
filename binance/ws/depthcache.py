@@ -116,7 +116,7 @@ class DepthCache(object):
         return DepthCache.sort_depth(self._asks, reverse=False, conv_type=self.conv_type)
 
     @staticmethod
-    def sort_depth(vals, reverse=False, conv_type: Callable = float, depth_limit: int = 2000):
+    def sort_depth(vals, reverse=False, conv_type: Callable = float, depth_limit: int = 1000):
         """Sort bids or asks by price"""
         if isinstance(vals, dict):
             lst = [
